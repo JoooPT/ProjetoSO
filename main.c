@@ -20,10 +20,8 @@ int main(int argc, char *argv[]) {
     while (jobs_dir) {
       if ((fileptr = readdir(jobs_dir)) != NULL) {
         if (strstr(fileptr->d_name, INPUT_EXTENSION) != NULL) {
-          char temp[512];
-          char filein[1025];
-          strcpy(temp,argv[1]);
-          sprintf(filein,"%s/%s",temp,fileptr->d_name );
+          char filein[1024];
+          sprintf(filein,"%s/%s", argv[1],fileptr->d_name);
           int fd_in = open(filein, O_RDONLY);
           int fd_out = create_output_file(fileptr->d_name, argv[1]);
           
