@@ -10,13 +10,11 @@
 #include "parser.h"
 
 int create_output_file(char *filename, char *dirname) {
-  char final[1025];
-  char output_name[512];
+  char final[1024];
   char input_name[512];
   strcpy(input_name, filename);
   char *ptr = strstr(input_name, INPUT_EXTENSION);
   memcpy(ptr, OUTPUT_EXTENSION, 5);
-  strcpy(output_name, dirname);
   sprintf(final, "%s/%s", dirname, input_name);
   return open(final, O_CREAT | O_RDWR | O_TRUNC, 0666);
 }
