@@ -57,7 +57,6 @@ int ems_init(unsigned int delay_ms) {
     fprintf(stderr, "EMS state has already been initialized\n");
     return 1;
   }
-
   event_list = create_list();
   state_access_delay_ms = delay_ms;
 

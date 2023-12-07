@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
           sprintf(filein,"%s/%s",temp,fileptr->d_name );
           int fd_in = open(filein, O_RDONLY);
           int fd_out = create_output_file(fileptr->d_name, argv[1]);
-          printf("ola\n");
+          
           execute_file(fd_in, fd_out, state_access_delay_ms);
-          printf("adeus\n");
+
           close(fd_in);
           close(fd_out);
         }
