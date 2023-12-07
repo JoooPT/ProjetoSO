@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <string.h>
 
 #include "constants.h"
 #include "operations.h"
@@ -10,9 +12,26 @@
 int main(int argc, char *argv[]) {
   unsigned int state_access_delay_ms = STATE_ACCESS_DELAY_MS;
 
-  if (argc > 1) {
+  if(argc > 1 ){
+    DIR* jobs_dir = opendir(argv[1]);
+    struct dirent* fileptr;
+    while(jobs_dir){
+      if((fileptr = readdir(jobs_dir)) != NULL){
+          if(strstr(fileptr->d_name,".jobs") != NULL){
+              printf("%s",fileptr->d_name);
+              printf("\n");
+          }
+      }
+      else{
+          break;
+      }
+    }
+    closedir(jobs_dir);
+  }
+
+  if (argc > 2 ) {
     char *endptr;
-    unsigned long int delay = strtoul(argv[1], &endptr, 10);
+    unsigned long int delay = strtoul(argv[2], &endptr, 10);
 
     if (*endptr != '\0' || delay > UINT_MAX) {
       fprintf(stderr, "Invalid delay value or value too large\n");
