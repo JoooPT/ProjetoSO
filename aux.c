@@ -13,6 +13,7 @@
 #include "threads.h"
 
 #define thread_index(current, max) (current % max)
+#define min(a,b) (a < b ? a:b)
 
 int create_output_file(char *filename, char *dirname) {
   char final[1024];
@@ -106,6 +107,11 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       break;
 
     case EOC:
+      for(int i = 0; i< min(num_threads,max_threads); i++){
+        if(!(i == thread_index(num_threads,max_threads))){
+          pthread_join(tid[i],NULL);
+        }
+      }
       ems_terminate();
       free(tid);
       return 0;
