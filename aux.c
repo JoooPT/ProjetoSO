@@ -11,6 +11,8 @@
 #include "parser.h"
 #include "threads.h"
 
+#define thread_index(current, max) (current % max)
+
 int create_output_file(char *filename, char *dirname) {
   char final[1024];
   char input_name[512];
@@ -24,14 +26,12 @@ int create_output_file(char *filename, char *dirname) {
 int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
                  int max_threads) {
 
-  pthread_t tid[512];
-  int oldest_thread = 0;
+  pthread_t *tid = malloc(max_threads * sizeof(pthread_t));
   int num_threads = 0;
   if (ems_init(state_access_delay_ms)) {
     fprintf(stderr, "Failed to initialize EMS\n");
     return 1;
   }
-  num_threads++;
 
   while (1) {
     unsigned int event_id, delay;
@@ -47,31 +47,30 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
     fflush(stdout);
 
     if (num_threads >= max_threads) {
-      pthread_join(tid[oldest_thread], NULL);
-      oldest_thread++;
+      pthread_join(tid[thread_index( num_threads, max_threads)], NULL);
     }
 
     switch (get_next(fd_in)) {
     case CMD_CREATE:
-      pthread_create(&tid[num_threads], NULL, thread_ems_create, (void *)&args);
+      pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, thread_ems_create, (void *)&args);
       num_threads++;
 
       break;
 
     case CMD_RESERVE:
-      pthread_create(&tid[num_threads], NULL, thread_ems_reserve,
+      pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, thread_ems_reserve,
                      (void *)&args);
       num_threads++;
       break;
 
     case CMD_SHOW:
-      pthread_create(&tid[num_threads], NULL, thread_ems_show, (void *)&args);
+      pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, thread_ems_show, (void *)&args);
       num_threads++;
 
       break;
 
     case CMD_LIST_EVENTS:
-      if (pthread_create(&tid[num_threads], NULL, ems_list_events,
+      if (pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, ems_list_events,
                          (void *)(args.fd_out))) {
         fprintf(stderr, "Failed to list events\n");
       }
@@ -80,7 +79,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       break;
 
     case CMD_WAIT:
-      pthread_create(&tid[num_threads], NULL, thread_ems_wait, (void *)&args);
+      pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, thread_ems_wait, (void *)&args);
       num_threads++;
 
       break;
