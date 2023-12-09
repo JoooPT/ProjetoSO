@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "parser.h": "c"
+        "parser.h": "c",
+        "constants.h": "c",
+        "unistd.h": "c"
     }
 }

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "aux.h"
 #include "constants.h"
@@ -26,7 +27,7 @@ int create_output_file(char *filename, char *dirname) {
 int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
                  int max_threads) {
 
-  pthread_t *tid = malloc(max_threads * sizeof(pthread_t));
+  pthread_t *tid = malloc((unsigned long)max_threads * sizeof(pthread_t));
   int num_threads = 0;
   if (ems_init(state_access_delay_ms)) {
     fprintf(stderr, "Failed to initialize EMS\n");
@@ -75,7 +76,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
         fprintf(stderr, "Failed to list events\n");
       }
       num_threads++;
-
+      
       break;
 
     case CMD_WAIT:
@@ -106,6 +107,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
 
     case EOC:
       ems_terminate();
+      free(tid);
       return 0;
     }
   }

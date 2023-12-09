@@ -13,7 +13,7 @@ typedef struct args {
   size_t *num_columns;
   size_t *num_coords;
   int *fd_out;
-  int *fd_in;
+  int* fd_in;
 } Args;
 
 /// Initializes the EMS state.
