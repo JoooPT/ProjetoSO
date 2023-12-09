@@ -1,8 +1,8 @@
 #ifndef EVENT_LIST_H
 #define EVENT_LIST_H
 
-#include <stddef.h>
 #include <pthread.h>
+#include <stddef.h>
 
 struct Event {
   unsigned int id;           /// Event id

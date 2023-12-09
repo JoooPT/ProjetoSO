@@ -106,7 +106,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       break;
 
     case EOC:
-      pthread_create(&tid[num_threads], NULL, ems_terminate, NULL);
+      ems_terminate();
       return 0;
     }
   }

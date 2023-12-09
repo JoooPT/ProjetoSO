@@ -67,16 +67,14 @@ int ems_init(unsigned int delay_ms) {
   return event_list == NULL;
 }
 
-void* ems_terminate() {
+int ems_terminate() {
   if (event_list == NULL) {
     fprintf(stderr, "EMS state must be initialized\n");
-    pthread_exit((void*)1);
+    return 1;
   }
-  pthread_mutex_lock(&event_list->mutex);
+
   free_list(event_list);
-  pthread_mutex_unlock(&event_list->mutex);
-  event_list = NULL;
-  pthread_exit(NULL);
+  return 0;
 }
 
 void *thread_ems_create(void *thread_args) {
@@ -99,7 +97,7 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
   }
 
   pthread_mutex_lock(&event_list->mutex);
-  
+
   if (get_event_with_delay(event_id) != NULL) {
     fprintf(stderr, "Event already exists\n");
     pthread_mutex_unlock(&event_list->mutex);
@@ -112,7 +110,7 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
     fprintf(stderr, "Error allocating memory for event\n");
     return 1;
   }
-  
+
   pthread_mutex_lock(&event->mutex);
   event->id = event_id;
   event->rows = num_rows;
@@ -166,7 +164,7 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
-  
+
   pthread_mutex_lock(&event_list->mutex);
 
   struct Event *event = get_event_with_delay(event_id);
@@ -231,7 +229,7 @@ int ems_show(unsigned int event_id, int fd_out) {
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
-  
+
   pthread_mutex_lock(&event_list->mutex);
   struct Event *event = get_event_with_delay(event_id);
   pthread_mutex_lock(&event->mutex);
@@ -289,7 +287,7 @@ void *ems_list_events(void *thread_fd_out) {
     // printf("%u\n", (current->event)->id);
     current = current->next;
   }
-  
+
   pthread_mutex_lock(&event_list->mutex);
   pthread_exit((void *)0);
 }
