@@ -2,11 +2,22 @@
 #define EMS_OPERATIONS_H
 
 #include <stddef.h>
+#include "constants.h"
+
+typedef struct args {
+    unsigned int* event_id;
+    size_t xs[MAX_RESERVATION_SIZE];
+    size_t ys[MAX_RESERVATION_SIZE];
+    size_t* num_rows;
+    size_t* num_columns;
+    size_t* num_coords; 
+    int* fd_out;
+} Args;
 
 /// Initializes the EMS state.
 /// @param delay_ms State access delay in milliseconds.
 /// @return 0 if the EMS state was initialized successfully, 1 otherwise.
-int ems_init(unsigned int delay_ms);
+void* ems_init(void* thread_delay_ms);
 
 /// Destroys the EMS state.
 int ems_terminate();
@@ -16,7 +27,7 @@ int ems_terminate();
 /// @param num_rows Number of rows of the event to be created.
 /// @param num_cols Number of columns of the event to be created.
 /// @return 0 if the event was created successfully, 1 otherwise.
-int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols);
+void* ems_create(void* thread_args);
 
 /// Creates a new reservation for the given event.
 /// @param event_id Id of the event to create a reservation for.
