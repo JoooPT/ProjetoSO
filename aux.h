@@ -10,7 +10,8 @@ int create_output_file(char *filename, char *dirname);
 /// @param fd_in File descriptor of the input file
 /// @param fd_out File descriptor of the output file
 /// @return 0 if suceeds
-int execute_file(int fd_in, int fd_out, unsigned int state_access_delay_ms, int max_threads);
+int execute_file(int fd_in, int fd_out, unsigned int state_access_delay_ms,
+                 int max_threads);
 
 /// Write that handles all the arguments
 /// @param fd file descriptor of the output file

@@ -1,14 +1,15 @@
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #include "aux.h"
 #include "constants.h"
 #include "operations.h"
 #include "parser.h"
+#include "threads.h"
 
 int create_output_file(char *filename, char *dirname) {
   char final[1024];
@@ -20,12 +21,14 @@ int create_output_file(char *filename, char *dirname) {
   return open(final, O_CREAT | O_RDWR | O_TRUNC, 0666);
 }
 
-int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms, int max_threads) {
-  
+int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
+                 int max_threads) {
+
   pthread_t tid[512];
   int oldest_thread = 0;
   int num_threads = 0;
-  if (pthread_create(&tid[num_threads], NULL, ems_init, (void*)&state_access_delay_ms)) {
+  if (pthread_create(&tid[num_threads], NULL, ems_init,
+                     (void *)&state_access_delay_ms)) {
     fprintf(stderr, "Failed to initialize EMS\n");
     return 1;
   }
@@ -36,10 +39,12 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms, int max_
     size_t num_rows, num_columns, num_coords;
     Args args;
     args.event_id = &event_id;
+    args.delay = &delay;
     args.num_rows = &num_rows;
     args.num_columns = &num_columns;
     args.num_coords = &num_coords;
     args.fd_out = &fd_out;
+    args.fd_in = &fd_in;
     fflush(stdout);
 
     if (num_threads >= max_threads) {
@@ -49,62 +54,35 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms, int max_
 
     switch (get_next(fd_in)) {
     case CMD_CREATE:
-      if (parse_create(fd_in, args.event_id, args.num_rows, args.num_columns) != 0) {
-        fprintf(stderr, "Invalid command. See HELP for usage\n");
-        continue;
-      }
-      if (pthread_create(&tid[num_threads], NULL, ems_create, (void*)&args)) {
-        fprintf(stderr, "Failed to create event\n");
-      }
+      pthread_create(&tid[num_threads], NULL, thread_ems_create, (void *)&args);
       num_threads++;
 
       break;
 
     case CMD_RESERVE:
-      *(args.num_coords) =
-          parse_reserve(fd_in, MAX_RESERVATION_SIZE, args.event_id, args.xs, args.ys);
-
-      if (*(args.num_coords) == 0) {
-        fprintf(stderr, "Invalid command. See HELP for usage\n");
-        continue;
-      }
-
-      if (ems_reserve(*(args.event_id), *(args.num_coords), args.xs, args.ys)) {
-        fprintf(stderr, "Failed to reserve seats\n");
-      }
-
+      pthread_create(&tid[num_threads], NULL, thread_ems_reserve,
+                     (void *)&args);
+      num_threads++;
       break;
 
     case CMD_SHOW:
-      if (parse_show(fd_in, args.event_id) != 0) {
-        fprintf(stderr, "Invalid command. See HELP for usage\n");
-        continue;
-      }
-
-      if (ems_show(*(args.event_id), *(args.fd_out))) {
-        fprintf(stderr, "Failed to show event\n");
-      }
+      pthread_create(&tid[num_threads], NULL, thread_ems_show, (void *)&args);
+      num_threads++;
 
       break;
 
     case CMD_LIST_EVENTS:
-      if (ems_list_events(*(args.fd_out))) {
+      if (pthread_create(&tid[num_threads], NULL, ems_list_events,
+                         (void *)(args.fd_out))) {
         fprintf(stderr, "Failed to list events\n");
       }
+      num_threads++;
 
       break;
 
     case CMD_WAIT:
-      if (parse_wait(fd_in, &delay, NULL) ==
-          -1) { // thread_id is not implemented
-        fprintf(stderr, "Invalid command. See HELP for usage\n");
-        continue;
-      }
-
-      if (delay > 0) {
-        printf("Waiting...\n");
-        ems_wait(delay);
-      }
+      pthread_create(&tid[num_threads], NULL, thread_ems_wait, (void *)&args);
+      num_threads++;
 
       break;
 
