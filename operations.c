@@ -74,16 +74,16 @@ void *ems_init(void *thread_delay_ms) {
   }
 }
 
-int ems_terminate() {
+void* ems_terminate() {
   if (event_list == NULL) {
     fprintf(stderr, "EMS state must be initialized\n");
-    return 1;
+    pthread_exit((void*)1);
   }
   pthread_mutex_lock(&event_list->mutex);
   free_list(event_list);
   pthread_mutex_unlock(&event_list->mutex);
   event_list = NULL;
-  return 0;
+  pthread_exit(NULL);
 }
 
 void *thread_ems_create(void *thread_args) {

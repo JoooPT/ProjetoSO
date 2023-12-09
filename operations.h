@@ -22,7 +22,7 @@ typedef struct args {
 void *ems_init(void *thread_delay_ms);
 
 /// Destroys the EMS state.
-int ems_terminate();
+void* ems_terminate();
 
 void *thread_ems_create(void *thread_args);
 
