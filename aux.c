@@ -27,8 +27,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
   pthread_t tid[512];
   int oldest_thread = 0;
   int num_threads = 0;
-  if (pthread_create(&tid[num_threads], NULL, ems_init,
-                     (void *)&state_access_delay_ms)) {
+  if (ems_init(state_access_delay_ms)) {
     fprintf(stderr, "Failed to initialize EMS\n");
     return 1;
   }

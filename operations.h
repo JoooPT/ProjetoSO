@@ -19,7 +19,7 @@ typedef struct args {
 /// Initializes the EMS state.
 /// @param delay_ms State access delay in milliseconds.
 /// @return 0 if the EMS state was initialized successfully, 1 otherwise.
-void *ems_init(void *thread_delay_ms);
+int ems_init(unsigned int delay_ms);
 
 /// Destroys the EMS state.
 void* ems_terminate();

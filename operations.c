@@ -55,23 +55,16 @@ static size_t seat_index(struct Event *event, size_t row, size_t col) {
   return (row - 1) * event->cols + col - 1;
 }
 
-void *ems_init(void *thread_delay_ms) {
-  unsigned int *delay_ms = (unsigned int *)thread_delay_ms;
+int ems_init(unsigned int delay_ms) {
   if (event_list != NULL) {
     fprintf(stderr, "EMS state has already been initialized\n");
-    pthread_exit((void *)1);
+    return 1;
   }
+
   event_list = create_list();
-  pthread_mutex_lock(&event_list->mutex);
-  state_access_delay_ms = *delay_ms;
-  if (event_list == NULL) {
-    pthread_mutex_unlock(&event_list->mutex);
-    pthread_exit((void *)1);
-  }
-  else {
-    pthread_mutex_unlock(&event_list->mutex);
-    pthread_exit((void *)0);
-  }
+  state_access_delay_ms = delay_ms;
+
+  return event_list == NULL;
 }
 
 void* ems_terminate() {
