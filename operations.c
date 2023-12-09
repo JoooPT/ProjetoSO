@@ -62,11 +62,16 @@ void *ems_init(void *thread_delay_ms) {
     pthread_exit((void *)1);
   }
   event_list = create_list();
+  pthread_mutex_lock(&event_list->mutex);
   state_access_delay_ms = *delay_ms;
-  if (event_list == NULL)
+  if (event_list == NULL) {
+    pthread_mutex_unlock(&event_list->mutex);
     pthread_exit((void *)1);
-  else
+  }
+  else {
+    pthread_mutex_unlock(&event_list->mutex);
     pthread_exit((void *)0);
+  }
 }
 
 int ems_terminate() {
@@ -74,8 +79,9 @@ int ems_terminate() {
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
-
+  pthread_mutex_lock(&event_list->mutex);
   free_list(event_list);
+  pthread_mutex_unlock(&event_list->mutex);
   event_list = NULL;
   return 0;
 }
@@ -99,8 +105,11 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
     return 1;
   }
 
+  pthread_mutex_lock(&event_list->mutex);
+  
   if (get_event_with_delay(event_id) != NULL) {
     fprintf(stderr, "Event already exists\n");
+    pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
 
@@ -110,7 +119,8 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
     fprintf(stderr, "Error allocating memory for event\n");
     return 1;
   }
-
+  
+  pthread_mutex_lock(&event->mutex);
   event->id = event_id;
   event->rows = num_rows;
   event->cols = num_cols;
@@ -119,6 +129,7 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
 
   if (event->data == NULL) {
     fprintf(stderr, "Error allocating memory for event data\n");
+    pthread_mutex_unlock(&event->mutex);
     free(event);
     return 1;
   }
@@ -130,10 +141,12 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
   if (append_to_list(event_list, event) != 0) {
     fprintf(stderr, "Error appending event to list\n");
     free(event->data);
+    pthread_mutex_unlock(&event->mutex);
     free(event);
     return 1;
   }
-
+  pthread_mutex_unlock(&event->mutex);
+  pthread_mutex_unlock(&event_list->mutex);
   return 0;
 }
 
@@ -160,11 +173,15 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
+  
+  pthread_mutex_lock(&event_list->mutex);
 
   struct Event *event = get_event_with_delay(event_id);
-
+  pthread_mutex_lock(&event->mutex);
   if (event == NULL) {
     fprintf(stderr, "Event not found\n");
+    pthread_mutex_unlock(&event->mutex);
+    pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
 
@@ -194,9 +211,12 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
     for (size_t j = 0; j < i; j++) {
       *get_seat_with_delay(event, seat_index(event, xs[j], ys[j])) = 0;
     }
+    pthread_mutex_unlock(&event->mutex);
+    pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
-
+  pthread_mutex_unlock(&event->mutex);
+  pthread_mutex_unlock(&event_list->mutex);
   return 0;
 }
 
@@ -218,11 +238,15 @@ int ems_show(unsigned int event_id, int fd_out) {
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
-
+  
+  pthread_mutex_lock(&event_list->mutex);
   struct Event *event = get_event_with_delay(event_id);
+  pthread_mutex_lock(&event->mutex);
 
   if (event == NULL) {
     fprintf(stderr, "Event not found\n");
+    pthread_mutex_unlock(&event->mutex);
+    pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
 
@@ -242,7 +266,8 @@ int ems_show(unsigned int event_id, int fd_out) {
     mywrite(fd_out, "\n");
     // printf("\n");
   }
-
+  pthread_mutex_unlock(&event->mutex);
+  pthread_mutex_unlock(&event_list->mutex);
   return 0;
 }
 
@@ -252,10 +277,11 @@ void *ems_list_events(void *thread_fd_out) {
     fprintf(stderr, "EMS state must be initialized\n");
     pthread_exit((void *)1);
   }
-
+  pthread_mutex_lock(&event_list->mutex);
   if (event_list->head == NULL) {
     mywrite(*(fd_out), "No events\n");
     // printf("No events\n");
+    pthread_mutex_unlock(&event_list->mutex);
     pthread_exit((void *)0);
   }
 
@@ -270,7 +296,8 @@ void *ems_list_events(void *thread_fd_out) {
     // printf("%u\n", (current->event)->id);
     current = current->next;
   }
-
+  
+  pthread_mutex_lock(&event_list->mutex);
   pthread_exit((void *)0);
 }
 
