@@ -146,20 +146,23 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
 }
 
 void *thread_ems_reserve(void *thread_args) {
-  Args *args = (Args *)thread_args;
+  Args *t_args = (Args *)thread_args;
+  Args *args = malloc(sizeof(Args));
+  *args = *t_args;
   *(args->num_coords) = parse_reserve(*(args->fd_in->fd), MAX_RESERVATION_SIZE,
                                       args->event_id, args->xs, args->ys);
 
   pthread_mutex_unlock(&(args->fd_in->mutex));
   if (*(args->num_coords) == 0) {
     fprintf(stderr, "Invalid command. See HELP for usage\n");
+    free(args);
     pthread_exit((void *)1);
   }
 
   if (ems_reserve(*(args->event_id), *(args->num_coords), args->xs, args->ys)) {
     fprintf(stderr, "Failed to reserve seats\n");
   }
-
+  free(args);
   pthread_exit(NULL);
 }
 
