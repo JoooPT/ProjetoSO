@@ -34,7 +34,9 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
     fprintf(stderr, "Failed to initialize EMS\n");
     return 1;
   }
-
+  File_in file_in;
+  file_in.fd = &fd_in;
+  pthread_mutex_init(&file_in.mutex, NULL);
   while (1) {
     unsigned int event_id, delay;
     size_t num_rows, num_columns, num_coords;
@@ -45,7 +47,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
     args.num_columns = &num_columns;
     args.num_coords = &num_coords;
     args.fd_out = &fd_out;
-    args.fd_in = &fd_in;
+    args.fd_in = &file_in;
     fflush(stdout);
 
     if (num_threads >= max_threads) {

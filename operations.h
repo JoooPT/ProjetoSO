@@ -3,6 +3,12 @@
 
 #include "constants.h"
 #include <stddef.h>
+#include <pthread.h>
+
+typedef struct filein {
+  int *fd;
+  pthread_mutex_t mutex;
+} File_in;
 
 typedef struct args {
   unsigned int *event_id;
@@ -13,7 +19,7 @@ typedef struct args {
   size_t *num_columns;
   size_t *num_coords;
   int *fd_out;
-  int* fd_in;
+  File_in* fd_in;
 } Args;
 
 /// Initializes the EMS state.

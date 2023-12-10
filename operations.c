@@ -79,11 +79,14 @@ int ems_terminate() {
 
 void *thread_ems_create(void *thread_args) {
   Args *args = (Args *)thread_args;
-  if (parse_create(*(args->fd_in), args->event_id, args->num_rows,
+  pthread_mutex_lock(&(args->fd_in->mutex));
+  if (parse_create(*(args->fd_in->fd), args->event_id, args->num_rows,
                    args->num_columns) != 0) {
     fprintf(stderr, "Invalid command. See HELP for usage\n");
+    pthread_mutex_unlock(&(args->fd_in->mutex));
     pthread_exit((void *)1);
   }
+  pthread_mutex_unlock(&(args->fd_in->mutex));
   if (ems_create(*(args->event_id), *(args->num_rows), *(args->num_columns))) {
     fprintf(stderr, "Failed to create event\n");
   }
@@ -145,9 +148,11 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
 
 void *thread_ems_reserve(void *thread_args) {
   Args *args = (Args *)thread_args;
-  *(args->num_coords) = parse_reserve(*(args->fd_in), MAX_RESERVATION_SIZE,
+  pthread_mutex_lock(&(args->fd_in->mutex));
+  *(args->num_coords) = parse_reserve(*(args->fd_in->fd), MAX_RESERVATION_SIZE,
                                       args->event_id, args->xs, args->ys);
 
+  pthread_mutex_unlock(&(args->fd_in->mutex));
   if (*(args->num_coords) == 0) {
     fprintf(stderr, "Invalid command. See HELP for usage\n");
     pthread_exit((void *)1);
@@ -215,11 +220,13 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
 
 void *thread_ems_show(void *thread_args) {
   Args *args = (Args *)thread_args;
-  if (parse_show(*(args->fd_in), args->event_id) != 0) {
+  pthread_mutex_lock(&(args->fd_in->mutex));
+  if (parse_show(*(args->fd_in->fd), args->event_id) != 0) {
     fprintf(stderr, "Invalid command. See HELP for usage\n");
+    pthread_mutex_unlock(&(args->fd_in->mutex));
     pthread_exit((void *)1);
   }
-
+  pthread_mutex_unlock(&(args->fd_in->mutex));
   if (ems_show(*(args->event_id), *(args->fd_out))) {
     fprintf(stderr, "Failed to show event\n");
   }
@@ -298,11 +305,14 @@ void *ems_list_events(void *thread_fd_out) {
 
 void *thread_ems_wait(void *thread_args) {
   Args *args = (Args *)thread_args;
-  if (parse_wait(*(args->fd_in), args->delay, NULL) ==
+  pthread_mutex_lock(&(args->fd_in->mutex));
+  if (parse_wait(*(args->fd_in->fd), args->delay, NULL) ==
       -1) { // thread_id is not implemented
     fprintf(stderr, "Invalid command. See HELP for usage\n");
+    pthread_mutex_unlock(&(args->fd_in->mutex));
     pthread_exit((void *)1);
   }
+  pthread_mutex_unlock(&(args->fd_in->mutex));
 
   if (*(args->delay) > 0) {
     printf("Waiting...\n");
