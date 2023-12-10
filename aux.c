@@ -54,6 +54,8 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       pthread_join(tid[thread_index( num_threads, max_threads)], NULL);
     }
 
+    pthread_mutex_lock(&file_in.mutex);
+
     switch (get_next(fd_in)) {
     case CMD_CREATE:
       pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, thread_ems_create, (void *)&args);
@@ -74,6 +76,7 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       break;
 
     case CMD_LIST_EVENTS:
+      pthread_mutex_unlock(&file_in.mutex);
       if (pthread_create(&tid[thread_index( num_threads, max_threads)], NULL, ems_list_events,
                          (void *)(args.fd_out))) {
         fprintf(stderr, "Failed to list events\n");
@@ -89,10 +92,12 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms,
       break;
 
     case CMD_INVALID:
+      pthread_mutex_unlock(&file_in.mutex);
       fprintf(stderr, "Invalid command. See HELP for usage\n");
       break;
 
     case CMD_HELP:
+      pthread_mutex_unlock(&file_in.mutex);
       printf("Available commands:\n"
              "  CREATE <event_id> <num_rows> <num_columns>\n"
              "  RESERVE <event_id> [(<x1>,<y1>) (<x2>,<y2>) ...]\n"
