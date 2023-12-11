@@ -77,21 +77,6 @@ int ems_terminate() {
   return 0;
 }
 
-void *thread_ems_create(void *thread_args) {
-  Args *args = (Args *)thread_args;
-  if (parse_create(*(args->fd_in->fd), args->event_id, args->num_rows,
-                   args->num_columns) != 0) {
-    fprintf(stderr, "Invalid command. See HELP for usage\n");
-    pthread_mutex_unlock(&(args->fd_in->mutex));
-    pthread_exit((void *)1);
-  }
-  pthread_mutex_unlock(&(args->fd_in->mutex));
-  if (ems_create(*(args->event_id), *(args->num_rows), *(args->num_columns))) {
-    fprintf(stderr, "Failed to create event\n");
-  }
-  pthread_exit(NULL);
-}
-
 int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
   if (event_list == NULL) {
     fprintf(stderr, "EMS state must be initialized\n");
@@ -143,27 +128,6 @@ int ems_create(unsigned int event_id, size_t num_rows, size_t num_cols) {
   pthread_mutex_unlock(&event->mutex);
   pthread_mutex_unlock(&event_list->mutex);
   return 0;
-}
-
-void *thread_ems_reserve(void *thread_args) {
-  Args *t_args = (Args *)thread_args;
-  Args *args = malloc(sizeof(Args));
-  *args = *t_args;
-  *(args->num_coords) = parse_reserve(*(args->fd_in->fd), MAX_RESERVATION_SIZE,
-                                      args->event_id, args->xs, args->ys);
-
-  pthread_mutex_unlock(&(args->fd_in->mutex));
-  if (*(args->num_coords) == 0) {
-    fprintf(stderr, "Invalid command. See HELP for usage\n");
-    free(args);
-    pthread_exit((void *)1);
-  }
-
-  if (ems_reserve(*(args->event_id), *(args->num_coords), args->xs, args->ys)) {
-    fprintf(stderr, "Failed to reserve seats\n");
-  }
-  free(args);
-  pthread_exit(NULL);
 }
 
 int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
@@ -219,20 +183,6 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
   return 0;
 }
 
-void *thread_ems_show(void *thread_args) {
-  Args *args = (Args *)thread_args;
-  if (parse_show(*(args->fd_in->fd), args->event_id) != 0) {
-    fprintf(stderr, "Invalid command. See HELP for usage\n");
-    pthread_mutex_unlock(&(args->fd_in->mutex));
-    pthread_exit((void *)1);
-  }
-  pthread_mutex_unlock(&(args->fd_in->mutex));
-  if (ems_show(*(args->event_id), *(args->fd_out))) {
-    fprintf(stderr, "Failed to show event\n");
-  }
-  pthread_exit(NULL);
-}
-
 int ems_show(unsigned int event_id, int fd_out) {
   if (event_list == NULL) {
     fprintf(stderr, "EMS state must be initialized\n");
@@ -271,27 +221,26 @@ int ems_show(unsigned int event_id, int fd_out) {
   return 0;
 }
 
-void *ems_list_events(void *thread_fd_out) {
-  int *fd_out = (int *)thread_fd_out;
+int ems_list_events(int fd_out) {
   if (event_list == NULL) {
     fprintf(stderr, "EMS state must be initialized\n");
-    pthread_exit((void *)1);
+    return 1;
   }
   pthread_mutex_lock(&event_list->mutex);
   if (event_list->head == NULL) {
-    mywrite(*(fd_out), "No events\n");
+    mywrite(fd_out, "No events\n");
     // printf("No events\n");
     pthread_mutex_unlock(&event_list->mutex);
-    pthread_exit((void *)0);
+    return 0;
   }
 
   struct ListNode *current = event_list->head;
   while (current != NULL) {
     pthread_mutex_lock(&(current->event)->mutex);
-    mywrite(*fd_out, "Event: ");
+    mywrite(fd_out, "Event: ");
     char id[64];
     sprintf(id, "%u", (current->event)->id);
-    mywrite(*fd_out, strcat(id, "\n"));
+    mywrite(fd_out, strcat(id, "\n"));
     pthread_mutex_unlock(&(current->event)->mutex);
 
     // printf("Event: ");
@@ -300,24 +249,7 @@ void *ems_list_events(void *thread_fd_out) {
   }
 
   pthread_mutex_unlock(&event_list->mutex);
-  pthread_exit((void *)0);
-}
-
-void *thread_ems_wait(void *thread_args) {
-  Args *args = (Args *)thread_args;
-  if (parse_wait(*(args->fd_in->fd), args->delay, NULL) ==
-      -1) { // thread_id is not implemented
-    fprintf(stderr, "Invalid command. See HELP for usage\n");
-    pthread_mutex_unlock(&(args->fd_in->mutex));
-    pthread_exit((void *)1);
-  }
-  pthread_mutex_unlock(&(args->fd_in->mutex));
-
-  if (*(args->delay) > 0) {
-    printf("Waiting...\n");
-    ems_wait(*(args->delay));
-  }
-  pthread_exit(NULL);
+  return 0;
 }
 
 void ems_wait(unsigned int delay_ms) {

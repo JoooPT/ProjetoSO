@@ -1,10 +1,19 @@
 #ifndef AUX_H
 #define AUX_H
 
+typedef struct args {
+  int fd_in;
+  int fd_out;
+  int thread_id;
+  int max_threads;
+} Args;
+
 /// Creates a output file for the given input file
 /// @param filename is the name of the input file
 /// @return the file descriptor of the output file
 int create_output_file(char *filename, char *dirname);
+
+void* run_thread(void* thread_args);
 
 /// Executes the commands on an input file and executes the commands
 /// @param fd_in File descriptor of the input file
