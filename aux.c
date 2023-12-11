@@ -12,17 +12,18 @@
 #include "parser.h"
 
 void* run_thread(void* thread_args) {
-    Args* args = (Args*)thread_args;
+    Args* t_args = (Args*)thread_args;
+    Args args = *t_args;
     int line = 0;
     while (1) {
-      if (line % args->max_threads == args->thread_id) {
+      if (line % args.max_threads == args.thread_id) {
         unsigned int event_id, delay;
         size_t num_rows, num_columns, num_coords;
         size_t xs[MAX_RESERVATION_SIZE], ys[MAX_RESERVATION_SIZE];
         fflush(stdout);
-        switch (get_next(args->fd_in)) {
+        switch (get_next(args.fd_in)) {
         case CMD_CREATE:
-          if (parse_create(args->fd_in, &event_id, &num_rows, &num_columns) != 0) {
+          if (parse_create(args.fd_in, &event_id, &num_rows, &num_columns) != 0) {
             fprintf(stderr, "Invalid command. See HELP for usage\n");
             continue;
           }
@@ -32,7 +33,7 @@ void* run_thread(void* thread_args) {
           break;
         case CMD_RESERVE:
           num_coords =
-              parse_reserve(args->fd_in, MAX_RESERVATION_SIZE, &event_id, xs, ys);
+              parse_reserve(args.fd_in, MAX_RESERVATION_SIZE, &event_id, xs, ys);
           if (num_coords == 0) {
             fprintf(stderr, "Invalid command. See HELP for usage\n");
             continue;
@@ -42,21 +43,21 @@ void* run_thread(void* thread_args) {
           }
           break;
         case CMD_SHOW:
-          if (parse_show(args->fd_in, &event_id) != 0) {
+          if (parse_show(args.fd_in, &event_id) != 0) {
             fprintf(stderr, "Invalid command. See HELP for usage\n");
             continue;
           }
-          if (ems_show(event_id, args->fd_out)) {
+          if (ems_show(event_id, args.fd_out)) {
             fprintf(stderr, "Failed to show event\n");
           }
           break;
         case CMD_LIST_EVENTS:
-          if (ems_list_events(args->fd_out)) {
+          if (ems_list_events(args.fd_out)) {
             fprintf(stderr, "Failed to list events\n");
           }
           break;
         case CMD_WAIT:
-          if (parse_wait(args->fd_in, &delay, NULL) ==
+          if (parse_wait(args.fd_in, &delay, NULL) ==
               -1) { // thread_id is not implemented
             fprintf(stderr, "Invalid command. See HELP for usage\n");
             continue;
@@ -83,6 +84,7 @@ void* run_thread(void* thread_args) {
         case CMD_EMPTY:
           break;
         case EOC:
+          printf("%d\n", args.thread_id);
           pthread_exit(NULL);
         }
       }
@@ -107,16 +109,20 @@ int execute_file(int fd_in, int fd_out, unsigned state_access_delay_ms, int max_
     return 1;
   }
   pthread_t* threads = malloc((unsigned long)max_threads * sizeof(pthread_t));
-  Args thread_args = { .fd_in = fd_in, .fd_out = fd_out, .max_threads = max_threads};
+  Args* args_list = malloc((unsigned long)max_threads * sizeof(Args));
   for (int i = 0; i < max_threads; i++) {
-    thread_args.thread_id = i;
-    pthread_create(&threads[i], NULL, run_thread, (void*)&thread_args);
+    args_list[i].fd_in = fd_in;
+    args_list[i].fd_out = fd_out;
+    args_list[i].max_threads = max_threads;
+    args_list[i].thread_id = i;
+    pthread_create(&threads[i], NULL, run_thread, (void*)&args_list[i]);
   }
   for (int i = 0; i < max_threads; i++) {
     pthread_join(threads[i], NULL);
   }
 
   ems_terminate();
+  free(args_list);
   free(threads);
   return 0;
 }
