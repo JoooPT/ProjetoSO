@@ -83,8 +83,7 @@ void *run_thread(void *thread_args) {
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
       }
-
-      if (delay > 0 && (int) thread_id == args->thread_id + 1) {
+      if (delay > 0 && ((int) thread_id == args->thread_id + 1 || thread_id == 0)) {
         printf("Waiting...\n");
         ems_wait(delay);
       }
