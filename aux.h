@@ -1,8 +1,15 @@
 #ifndef AUX_H
 #define AUX_H
 
+#include <pthread.h>
+
+typedef struct filein {
+  int fd;
+  pthread_mutex_t mutex;
+} Filein;
+
 typedef struct args {
-  int fd_in;
+  Filein* filein;
   int fd_out;
   int thread_id;
   int max_threads;
