@@ -45,8 +45,9 @@ static void cleanup(int fd) {
     ;
 }
 
-enum Command get_next(int fd) {
+enum Command get_next(int fd, int *line) {
   char buf[16];
+  line++;
   if (read(fd, buf, 1) != 1) {
     return EOC;
   }

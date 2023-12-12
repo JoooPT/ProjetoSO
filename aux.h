@@ -9,7 +9,7 @@ typedef struct filein {
 } Filein;
 
 typedef struct args {
-  Filein* filein;
+  int filein;
   int fd_out;
   int thread_id;
   int max_threads;
@@ -20,13 +20,13 @@ typedef struct args {
 /// @return the file descriptor of the output file
 int create_output_file(char *filename, char *dirname);
 
-void* run_thread(void* thread_args);
+void *run_thread(void *thread_args);
 
 /// Executes the commands on an input file and executes the commands
-/// @param fd_in File descriptor of the input file
+/// @param filein descriptor of the input file
 /// @param fd_out File descriptor of the output file
 /// @return 0 if suceeds
-int execute_file(int fd_in, int fd_out, unsigned int state_access_delay_ms,
+int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
                  int max_threads);
 
 /// Write that handles all the arguments

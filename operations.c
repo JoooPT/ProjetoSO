@@ -256,3 +256,5 @@ void ems_wait(unsigned int delay_ms) {
   struct timespec delay = delay_to_timespec(delay_ms);
   nanosleep(&delay, NULL);
 }
+
+void ems_barrier(int thread_id){}

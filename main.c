@@ -66,12 +66,9 @@ int main(int argc, char *argv[]) {
           if (pid == 0) {
             char filein[1024];
             sprintf(filein, "%s/%s", argv[1], fileptr->d_name);
-            int fd_in = open(filein, O_RDONLY);
             int fd_out = create_output_file(fileptr->d_name, argv[1]);
 
-            execute_file(fd_in, fd_out, state_access_delay_ms, max_threads);
-
-            close(fd_in);
+            execute_file(filein, fd_out, state_access_delay_ms, max_threads);
             close(fd_out);
             exit(0);
           }
