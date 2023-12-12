@@ -19,7 +19,7 @@ void *run_thread(void *thread_args) {
   Args *args = (Args *)thread_args;
   int line = 0;
   while (1) {
-    unsigned int event_id, delay;
+    unsigned int event_id, delay, thread_id;
     size_t num_rows, num_columns, num_coords;
     size_t xs[MAX_RESERVATION_SIZE], ys[MAX_RESERVATION_SIZE];
     fflush(stdout);
@@ -78,13 +78,13 @@ void *run_thread(void *thread_args) {
 
       break;
     case CMD_WAIT:
-      if (parse_wait(args->fd_in, &delay, NULL) ==
-          -1) { // thread_id is not implemented
+      if (parse_wait(args->fd_in, &delay, &thread_id) ==
+          -1) { 
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
       }
 
-      if (delay > 0) {
+      if (delay > 0 && (int) thread_id == args->thread_id + 1) {
         printf("Waiting...\n");
         ems_wait(delay);
       }
@@ -106,12 +106,11 @@ void *run_thread(void *thread_args) {
              "  RESERVE <event_id> [(<x1>,<y1>) (<x2>,<y2>) ...]\n"
              "  SHOW <event_id>\n"
              "  LIST\n"
-             "  WAIT <delay_ms> [thread_id]\n" // thread_id is not implemented
-             "  BARRIER\n"                     // Not implemented
+             "  WAIT <delay_ms> [thread_id]\n" 
+             "  BARRIER\n"
              "  HELP\n");
       break;
     case CMD_BARRIER:
-      printf("Thread: %d chegou á barrier\n", args->thread_id);
       pthread_exit(BARRIER);
     case CMD_EMPTY:
 
@@ -153,26 +152,23 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
     pthread_create(&threads[i], NULL, run_thread, (void *)&args_list[i]);
   }
 
-  void* r_value;
+  void *r_value;
   int is_barrier = 0;
-  while(1){
+  while (1) {
     for (int i = 0; i < max_threads; i++) {
       pthread_join(threads[i], &r_value);
-      printf("Thread: %d saiu\n", i);
-      if(r_value == BARRIER){
+      if (r_value == BARRIER) {
         is_barrier = 1;
-        printf("isbarrier: %d\n",is_barrier);
       }
     }
-    if(is_barrier){
+    if (is_barrier) {
       is_barrier = 0;
-      for (int i = 0; i < max_threads; i++){
-        printf("Thread: %d vai voltar\n", i);
-        printf("Thread: %d with %d file_in\n",i, args_list[i].fd_in );
+      for (int i = 0; i < max_threads; i++) {
         pthread_create(&threads[i], NULL, run_thread, (void *)&args_list[i]);
       }
+    } else {
+      break;
     }
-    else{break;}
   }
 
   ems_terminate();
