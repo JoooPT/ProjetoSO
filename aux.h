@@ -6,13 +6,8 @@
 
 #include <pthread.h>
 
-typedef struct filein {
-  int fd;
-  pthread_mutex_t mutex;
-} Filein;
-
 typedef struct args {
-  int filein;
+  int fd_in;
   int fd_out;
   int thread_id;
   int max_threads;

@@ -23,9 +23,9 @@ void *run_thread(void *thread_args) {
     size_t num_rows, num_columns, num_coords;
     size_t xs[MAX_RESERVATION_SIZE], ys[MAX_RESERVATION_SIZE];
     fflush(stdout);
-    switch (get_next(args->filein, &line)) {
+    switch (get_next(args->fd_in, &line)) {
     case CMD_CREATE:
-      if (parse_create(args->filein, &event_id, &num_rows, &num_columns) != 0) {
+      if (parse_create(args->fd_in, &event_id, &num_rows, &num_columns) != 0) {
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
       }
@@ -40,7 +40,7 @@ void *run_thread(void *thread_args) {
       break;
     case CMD_RESERVE:
       num_coords =
-          parse_reserve(args->filein, MAX_RESERVATION_SIZE, &event_id, xs, ys);
+          parse_reserve(args->fd_in, MAX_RESERVATION_SIZE, &event_id, xs, ys);
       if (num_coords == 0) {
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
@@ -55,7 +55,7 @@ void *run_thread(void *thread_args) {
       }
       break;
     case CMD_SHOW:
-      if (parse_show(args->filein, &event_id) != 0) {
+      if (parse_show(args->fd_in, &event_id) != 0) {
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
       }
@@ -78,7 +78,7 @@ void *run_thread(void *thread_args) {
 
       break;
     case CMD_WAIT:
-      if (parse_wait(args->filein, &delay, NULL) ==
+      if (parse_wait(args->fd_in, &delay, NULL) ==
           -1) { // thread_id is not implemented
         fprintf(stderr, "Invalid command. See HELP for usage\n");
         continue;
@@ -117,11 +117,11 @@ void *run_thread(void *thread_args) {
 
       break;
     case EOC:
-      close(args->filein);
+      close(args->fd_in);
       pthread_exit(SUCESS);
     }
   }
-  close(args->filein);
+  close(args->fd_in);
   pthread_exit(SUCESS);
 }
 
@@ -146,7 +146,7 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
   Args *args_list = malloc((unsigned long)max_threads * sizeof(Args));
   for (int i = 0; i < max_threads; i++) {
     int fd_in = open(filein, O_RDONLY);
-    args_list[i].filein = fd_in;
+    args_list[i].fd_in = fd_in;
     args_list[i].fd_out = fd_out;
     args_list[i].max_threads = max_threads;
     args_list[i].thread_id = i;
@@ -168,7 +168,7 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
       is_barrier = 0;
       for (int i = 0; i < max_threads; i++){
         printf("Thread: %d vai voltar\n", i);
-        printf("Thread: %d with %d file_in\n",i, args_list[i].filein );
+        printf("Thread: %d with %d file_in\n",i, args_list[i].fd_in );
         pthread_create(&threads[i], NULL, run_thread, (void *)&args_list[i]);
       }
     }
