@@ -111,17 +111,18 @@ void *run_thread(void *thread_args) {
              "  HELP\n");
       break;
     case CMD_BARRIER:
-      
+      printf("Thread: %d chegou á barrier\n", args->thread_id);
+      pthread_exit(BARRIER);
     case CMD_EMPTY:
 
       break;
     case EOC:
       close(args->filein);
-      pthread_exit(NULL);
+      pthread_exit(SUCESS);
     }
   }
   close(args->filein);
-  pthread_exit(NULL);
+  pthread_exit(SUCESS);
 }
 
 int create_output_file(char *filename, char *dirname) {
@@ -140,6 +141,7 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
     fprintf(stderr, "Failed to initialize EMS\n");
     return 1;
   }
+
   pthread_t *threads = malloc((unsigned long)max_threads * sizeof(pthread_t));
   Args *args_list = malloc((unsigned long)max_threads * sizeof(Args));
   for (int i = 0; i < max_threads; i++) {
@@ -150,8 +152,27 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
     args_list[i].thread_id = i;
     pthread_create(&threads[i], NULL, run_thread, (void *)&args_list[i]);
   }
-  for (int i = 0; i < max_threads; i++) {
-    pthread_join(threads[i], NULL);
+
+  void* r_value;
+  int is_barrier = 0;
+  while(1){
+    for (int i = 0; i < max_threads; i++) {
+      pthread_join(threads[i], &r_value);
+      printf("Thread: %d saiu\n", i);
+      if(r_value == BARRIER){
+        is_barrier = 1;
+        printf("isbarrier: %d\n",is_barrier);
+      }
+    }
+    if(is_barrier){
+      is_barrier = 0;
+      for (int i = 0; i < max_threads; i++){
+        printf("Thread: %d vai voltar\n", i);
+        printf("Thread: %d with %d file_in\n",i, args_list[i].filein );
+        pthread_create(&threads[i], NULL, run_thread, (void *)&args_list[i]);
+      }
+    }
+    else{break;}
   }
 
   ems_terminate();

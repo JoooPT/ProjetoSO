@@ -1,6 +1,9 @@
 #ifndef AUX_H
 #define AUX_H
 
+#define BARRIER (void *)1
+#define SUCESS (void *)0
+
 #include <pthread.h>
 
 typedef struct filein {
