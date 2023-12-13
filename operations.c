@@ -191,14 +191,14 @@ int ems_show(unsigned int event_id, int fd_out) {
 
   pthread_mutex_lock(&event_list->mutex);
   struct Event *event = get_event_with_delay(event_id);
-  pthread_mutex_lock(&event->mutex);
 
   if (event == NULL) {
     fprintf(stderr, "Event not found\n");
-    pthread_mutex_unlock(&event->mutex);
     pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
+
+  pthread_mutex_lock(&event->mutex);
 
   for (size_t i = 1; i <= event->rows; i++) {
     for (size_t j = 1; j <= event->cols; j++) {
@@ -206,15 +206,12 @@ int ems_show(unsigned int event_id, int fd_out) {
       char seatchar[64];
       sprintf(seatchar, "%u", *seat);
       mywrite(fd_out, seatchar);
-      // printf("%u", *seat);
 
       if (j < event->cols) {
         mywrite(fd_out, " ");
-        // printf(" ");
       }
     }
     mywrite(fd_out, "\n");
-    // printf("\n");
   }
   pthread_mutex_unlock(&event->mutex);
   pthread_mutex_unlock(&event_list->mutex);
@@ -229,7 +226,6 @@ int ems_list_events(int fd_out) {
   pthread_mutex_lock(&event_list->mutex);
   if (event_list->head == NULL) {
     mywrite(fd_out, "No events\n");
-    // printf("No events\n");
     pthread_mutex_unlock(&event_list->mutex);
     return 0;
   }
@@ -243,8 +239,6 @@ int ems_list_events(int fd_out) {
     mywrite(fd_out, strcat(id, "\n"));
     pthread_mutex_unlock(&(current->event)->mutex);
 
-    // printf("Event: ");
-    // printf("%u\n", (current->event)->id);
     current = current->next;
   }
 

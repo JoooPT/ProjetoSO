@@ -168,7 +168,7 @@ int execute_file(char *filein, int fd_out, unsigned int state_access_delay_ms,
     } else {
       break;
     }
-  }
+  } free(args_list);
 
   ems_terminate();
   free(args_list);
