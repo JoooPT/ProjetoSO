@@ -140,13 +140,12 @@ int ems_reserve(unsigned int event_id, size_t num_seats, size_t *xs,
   pthread_mutex_lock(&event_list->mutex);
 
   struct Event *event = get_event_with_delay(event_id);
-  pthread_mutex_lock(&event->mutex);
   if (event == NULL) {
     fprintf(stderr, "Event not found\n");
-    pthread_mutex_unlock(&event->mutex);
     pthread_mutex_unlock(&event_list->mutex);
     return 1;
   }
+  pthread_mutex_lock(&event->mutex);
 
   unsigned int reservation_id = ++event->reservations;
 
