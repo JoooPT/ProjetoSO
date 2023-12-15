@@ -72,7 +72,7 @@ int ems_terminate() {
     fprintf(stderr, "EMS state must be initialized\n");
     return 1;
   }
-
+  pthread_mutex_destroy(&event_list->mutex);
   free_list(event_list);
   return 0;
 }

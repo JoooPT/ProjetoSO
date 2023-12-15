@@ -52,7 +52,8 @@ void free_list(struct EventList *list) {
   while (current) {
     struct ListNode *temp = current;
     current = current->next;
-
+    
+    pthread_mutex_destroy(&temp->event->mutex);
     free_event(temp->event);
     free(temp);
   }

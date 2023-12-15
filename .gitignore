@@ -10,6 +10,7 @@
 ### Above combination will ignore all files without extension ###
 
 
+
 # Compiled source #
 ###################
 *.com
@@ -32,3 +33,4 @@
 *.rar
 *.tar
 *.zip
+
